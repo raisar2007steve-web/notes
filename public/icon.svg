@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="128" fill="#15171e"/>
+  <rect x="32" y="32" width="448" height="448" rx="96" fill="#1b1e26" stroke="#f5b041" stroke-width="12"/>
+  <path d="M140 160h160c44 0 80 36 80 80s-36 80-80 80H140V160z" fill="#f5b041" opacity="0.15"/>
+  <!-- Book & Idea motif -->
+  <path d="M160 140v220c0 22 18 40 40 40h160v-40H200c-11 0-20-9-20-20V140h-20z" fill="#f5b041"/>
+  <path d="M200 140h160v220H200V140z" fill="#f5b041" opacity="0.9"/>
+  <circle cx="280" cy="220" r="36" fill="#0f1015"/>
+  <path d="M280 200v20M270 230h20" stroke="#f5b041" stroke-width="6" stroke-linecap="round"/>
+</svg>
