@@ -1,0 +1,6 @@
+{
+  "name": "Innovara Notes",
+  "description": "A collaborative digital bookshelf and innovation notebook platform where students document ideas, projects, and research.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
