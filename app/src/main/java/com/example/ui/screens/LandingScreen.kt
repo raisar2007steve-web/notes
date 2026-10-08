@@ -69,18 +69,11 @@ import com.example.ui.theme.VioletAccent
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun LandingScreen(
+  existingUsers: List<com.example.data.local.entity.UserEntity> = emptyList(),
   onEnter: (String) -> Unit
 ) {
   var showNamePrompt by remember { mutableStateOf(false) }
-  var enteredName by remember { mutableStateOf("Steve Andrew Rouse") }
-
-  val sampleStudents = listOf(
-    "Steve Andrew Rouse",
-    "Priya Sharma",
-    "Arun Kumar",
-    "Rahul Verma",
-    "Divya Patel"
-  )
+  var enteredName by remember { mutableStateOf("") }
 
   Box(
     modifier = Modifier
@@ -231,41 +224,49 @@ fun LandingScreen(
                 )
               )
 
-              Spacer(modifier = Modifier.height(14.dp))
+              if (existingUsers.isNotEmpty()) {
+                Spacer(modifier = Modifier.height(14.dp))
 
-              Text(
-                text = "Or choose a featured innovator:",
-                style = MaterialTheme.typography.labelSmall.copy(color = TextMediumEmphasis)
-              )
+                Text(
+                  text = "Or continue as a student shelf on this device:",
+                  style = MaterialTheme.typography.labelSmall.copy(color = TextMediumEmphasis)
+                )
 
-              Spacer(modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
 
-              FlowRow(
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
-              ) {
-                sampleStudents.forEach { student ->
-                  Box(
-                    modifier = Modifier
-                      .clip(RoundedCornerShape(20.dp))
-                      .background(if (enteredName == student) GoldPrimary.copy(alpha = 0.2f) else Graphite800)
-                      .border(
-                        1.dp,
-                        if (enteredName == student) GoldPrimary else Graphite700,
-                        RoundedCornerShape(20.dp)
+                FlowRow(
+                  horizontalArrangement = Arrangement.spacedBy(8.dp),
+                  verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                  existingUsers.forEach { user ->
+                    Box(
+                      modifier = Modifier
+                        .clip(RoundedCornerShape(20.dp))
+                        .background(if (enteredName == user.name) GoldPrimary.copy(alpha = 0.2f) else Graphite800)
+                        .border(
+                          1.dp,
+                          if (enteredName == user.name) GoldPrimary else Graphite700,
+                          RoundedCornerShape(20.dp)
+                        )
+                        .clickable { enteredName = user.name }
+                        .padding(horizontal = 12.dp, vertical = 6.dp)
+                    ) {
+                      Text(
+                        text = user.name,
+                        style = MaterialTheme.typography.labelMedium.copy(
+                          color = if (enteredName == user.name) GoldLight else TextMediumEmphasis,
+                          fontWeight = if (enteredName == user.name) FontWeight.Bold else FontWeight.Normal
+                        )
                       )
-                      .clickable { enteredName = student }
-                      .padding(horizontal = 12.dp, vertical = 6.dp)
-                  ) {
-                    Text(
-                      text = student,
-                      style = MaterialTheme.typography.labelMedium.copy(
-                        color = if (enteredName == student) GoldLight else TextMediumEmphasis,
-                        fontWeight = if (enteredName == student) FontWeight.Bold else FontWeight.Normal
-                      )
-                    )
+                    }
                   }
                 }
+              } else {
+                Spacer(modifier = Modifier.height(10.dp))
+                Text(
+                  text = "✓ Your student identity and shelf data will be remembered permanently on this device.",
+                  style = MaterialTheme.typography.labelSmall.copy(color = TextLowEmphasis)
+                )
               }
 
               Spacer(modifier = Modifier.height(20.dp))

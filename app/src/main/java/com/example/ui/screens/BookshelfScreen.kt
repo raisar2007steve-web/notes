@@ -52,6 +52,9 @@ fun BookshelfScreen(
   onOpenStudentBook: (UserEntity) -> Unit
 ) {
   val allUsers by viewModel.allUsers.collectAsState()
+  val allNotes by viewModel.allNotes.collectAsState()
+  val allProjects by viewModel.allProjects.collectAsState()
+  val allTasks by viewModel.allTasks.collectAsState()
   val searchQuery by viewModel.bookshelfQuery.collectAsState()
   val selectedFilter by viewModel.bookshelfFilter.collectAsState()
 
@@ -172,39 +175,11 @@ fun BookshelfScreen(
         modifier = Modifier.weight(1f)
       ) {
         items(filteredUsers, key = { it.id }) { user ->
-          // Deterministic counts based on user for fast, responsive list display
-          val ideasCount = when (user.id) {
-            "user_steve" -> 12
-            "user_priya" -> 8
-            "user_arun" -> 7
-            "user_rahul" -> 5
-            "user_divya" -> 6
-            else -> 3
-          }
-          val notesCount = when (user.id) {
-            "user_steve" -> 14
-            "user_priya" -> 9
-            "user_arun" -> 6
-            "user_rahul" -> 8
-            "user_divya" -> 11
-            else -> 4
-          }
-          val projectsCount = when (user.id) {
-            "user_steve" -> 4
-            "user_priya" -> 2
-            "user_arun" -> 3
-            "user_rahul" -> 2
-            "user_divya" -> 2
-            else -> 1
-          }
-          val tasksCount = when (user.id) {
-            "user_steve" -> 21
-            "user_priya" -> 14
-            "user_arun" -> 12
-            "user_rahul" -> 9
-            "user_divya" -> 15
-            else -> 5
-          }
+          val userNotes = allNotes.filter { it.userId == user.id }
+          val ideasCount = userNotes.count { it.type == "IDEA" }
+          val notesCount = userNotes.size
+          val projectsCount = allProjects.count { it.userId == user.id }
+          val tasksCount = allTasks.count { it.userId == user.id && it.status == "COMPLETED" }
 
           StudentBookCard(
             user = user,

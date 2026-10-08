@@ -1,0 +1,104 @@
+name: Build Android APK & App Bundle
+
+on:
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - 'README.md'
+      - '.gitignore'
+  pull_request:
+    branches:
+      - main
+      - master
+  workflow_dispatch:
+
+jobs:
+  build-android:
+    name: Build APK & Bundle
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Source Code
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: 'npm'
+
+      - name: Install Web Dependencies
+        run: npm install
+
+      - name: Build Web Application & Bundle Native Assets
+        run: npm run build
+
+      - name: Set up Java JDK
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'zulu'
+          java-version: '17'
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Build Android Debug APK & Bundle
+        run: |
+          chmod +x ./gradlew 2>/dev/null || true
+          if [ -f "./gradlew" ] && [ -f "gradle/wrapper/gradle-wrapper.jar" ]; then
+            ./gradlew assembleDebug bundleDebug --stacktrace --no-daemon
+          else
+            gradle assembleDebug bundleDebug --stacktrace --no-daemon || ./gradlew assembleDebug bundleDebug --stacktrace --no-daemon
+          fi
+
+      - name: Package Output APK
+        id: find_apk
+        run: |
+          APK_PATH=$(find app/build/outputs/apk -name "*.apk" | head -n 1)
+          if [ -n "$APK_PATH" ]; then
+            echo "Found APK: $APK_PATH"
+            cp "$APK_PATH" innovara-notes-debug.apk
+            echo "has_apk=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_apk=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Package Output Bundle (.aab)
+        id: find_bundle
+        run: |
+          AAB_PATH=$(find app/build/outputs/bundle -name "*.aab" | head -n 1)
+          if [ -n "$AAB_PATH" ]; then
+            echo "Found Bundle: $AAB_PATH"
+            cp "$AAB_PATH" innovara-notes-debug.aab
+            echo "has_bundle=true" >> $GITHUB_OUTPUT
+          else
+            echo "has_bundle=false" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Upload APK as Artifact
+        if: steps.find_apk.outputs.has_apk == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: innovara-notes-debug-apk
+          path: innovara-notes-debug.apk
+          retention-days: 30
+
+      - name: Upload App Bundle as Artifact
+        if: steps.find_bundle.outputs.has_bundle == 'true'
+        uses: actions/upload-artifact@v4
+        with:
+          name: innovara-notes-app-bundle
+          path: innovara-notes-debug.aab
+          retention-days: 30
+
+      - name: Job Summary
+        run: |
+          echo "### 🚀 Innovara Notes Android Build Complete!" >> $GITHUB_STEP_SUMMARY
+          echo "Your manual installation APK and Google Play bundle are ready in the Artifacts section:" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **APK File:** \`innovara-notes-debug.apk\` (Direct install on any Android phone)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📦 **AAB Bundle:** \`innovara-notes-debug.aab\` (Android App Bundle)" >> $GITHUB_STEP_SUMMARY
+          echo "- 📱 **Compatibility:** Android 7.0+ (Min SDK 24, Target SDK 36)" >> $GITHUB_STEP_SUMMARY
+          echo "- 🔒 **Privacy:** Offline-first & local persistent device storage with zero mock data" >> $GITHUB_STEP_SUMMARY

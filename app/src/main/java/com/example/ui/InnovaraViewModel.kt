@@ -1,6 +1,7 @@
 package com.example.ui
 
 import android.app.Application
+import android.content.Context
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.data.local.InnovaraDatabase
@@ -19,6 +20,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.firstOrNull
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -36,6 +38,7 @@ sealed class Screen {
 class InnovaraViewModel(application: Application) : AndroidViewModel(application) {
   private val database = InnovaraDatabase.getDatabase(application)
   private val repository = InnovaraRepository(database.innovaraDao())
+  private val prefs = application.getSharedPreferences("innovara_prefs", Context.MODE_PRIVATE)
 
   val allUsers: StateFlow<List<UserEntity>> = repository.allUsers.stateIn(
     scope = viewModelScope,
@@ -44,6 +47,30 @@ class InnovaraViewModel(application: Application) : AndroidViewModel(application
   )
 
   val allActivities: StateFlow<List<ActivityEntity>> = repository.allActivities.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = emptyList()
+  )
+
+  val allNotes: StateFlow<List<NoteEntity>> = repository.allNotes.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = emptyList()
+  )
+
+  val allProjects: StateFlow<List<ProjectEntity>> = repository.allProjects.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = emptyList()
+  )
+
+  val allTasks: StateFlow<List<TaskEntity>> = repository.allTasks.stateIn(
+    scope = viewModelScope,
+    started = SharingStarted.WhileSubscribed(5000),
+    initialValue = emptyList()
+  )
+
+  val allDevelopments: StateFlow<List<DevelopmentEntity>> = repository.allDevelopments.stateIn(
     scope = viewModelScope,
     started = SharingStarted.WhileSubscribed(5000),
     initialValue = emptyList()
@@ -69,7 +96,23 @@ class InnovaraViewModel(application: Application) : AndroidViewModel(application
 
   init {
     viewModelScope.launch {
-      repository.ensureSeeded()
+      // Restore previously logged-in student from local device storage so it never asks again!
+      val savedUserId = prefs.getString("saved_user_id", null)
+      val savedUserName = prefs.getString("saved_user_name", null)
+
+      if (!savedUserId.isNullOrBlank() || !savedUserName.isNullOrBlank()) {
+        val user = if (!savedUserId.isNullOrBlank()) {
+          repository.getUserById(savedUserId).firstOrNull() ?: (if (!savedUserName.isNullOrBlank()) repository.getOrCreateUserByName(savedUserName) else null)
+        } else {
+          repository.getOrCreateUserByName(savedUserName!!)
+        }
+
+        if (user != null) {
+          _currentUser.value = user
+          _activeViewingUser.value = user
+          _currentScreen.value = Screen.Dashboard
+        }
+      }
     }
   }
 
@@ -90,11 +133,25 @@ class InnovaraViewModel(application: Application) : AndroidViewModel(application
     return false
   }
 
-  fun enterAsUser(name: String) {
+  fun enterAsUser(name: String, field: String? = null) {
     viewModelScope.launch {
       val user = repository.getOrCreateUserByName(name)
-      _currentUser.value = user
-      _activeViewingUser.value = user
+      if (!field.isNullOrBlank() && user.field == "Innovator & Student") {
+        val updated = user.copy(field = field.trim())
+        repository.updateUser(updated)
+        _currentUser.value = updated
+        _activeViewingUser.value = updated
+      } else {
+        _currentUser.value = user
+        _activeViewingUser.value = user
+      }
+
+      // Remember student on local device permanently
+      prefs.edit()
+        .putString("saved_user_id", user.id)
+        .putString("saved_user_name", user.name)
+        .apply()
+
       _screenStack.clear()
       _currentScreen.value = Screen.Dashboard
     }
@@ -107,7 +164,45 @@ class InnovaraViewModel(application: Application) : AndroidViewModel(application
 
   fun switchActiveUser(user: UserEntity) {
     _currentUser.value = user
+    _activeViewingUser.value = user
+    prefs.edit()
+      .putString("saved_user_id", user.id)
+      .putString("saved_user_name", user.name)
+      .apply()
   }
+
+  fun logout() {
+    prefs.edit().remove("saved_user_id").remove("saved_user_name").apply()
+    _currentUser.value = null
+    _activeViewingUser.value = null
+    _screenStack.clear()
+    _currentScreen.value = Screen.Landing
+  }
+
+  // Current logged in user's data flows
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentUserNotes: StateFlow<List<NoteEntity>> = _currentUser.flatMapLatest { user ->
+    if (user == null) flowOf(emptyList())
+    else repository.getNotesForUser(user.id, isOwner = true)
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentUserProjects: StateFlow<List<ProjectEntity>> = _currentUser.flatMapLatest { user ->
+    if (user == null) flowOf(emptyList())
+    else repository.getProjectsForUser(user.id)
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentUserTasks: StateFlow<List<TaskEntity>> = _currentUser.flatMapLatest { user ->
+    if (user == null) flowOf(emptyList())
+    else repository.getTasksForUser(user.id)
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+
+  @OptIn(ExperimentalCoroutinesApi::class)
+  val currentUserDevelopments: StateFlow<List<DevelopmentEntity>> = _currentUser.flatMapLatest { user ->
+    if (user == null) flowOf(emptyList())
+    else repository.getDevelopmentsForUser(user.id)
+  }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
   // Active user's data flows
   @OptIn(ExperimentalCoroutinesApi::class)

@@ -36,6 +36,9 @@ interface InnovaraDao {
   suspend fun insertUsers(users: List<UserEntity>)
 
   // Notes (Ideas, Thoughts, General, Research, Learning)
+  @Query("SELECT * FROM notes")
+  fun getAllNotes(): Flow<List<NoteEntity>>
+
   @Query("SELECT * FROM notes WHERE userId = :userId ORDER BY updatedAt DESC")
   fun getAllNotesForUser(userId: String): Flow<List<NoteEntity>>
 
@@ -64,6 +67,9 @@ interface InnovaraDao {
   suspend fun deleteNote(id: String)
 
   // Projects
+  @Query("SELECT * FROM projects")
+  fun getAllProjects(): Flow<List<ProjectEntity>>
+
   @Query("SELECT * FROM projects WHERE userId = :userId ORDER BY updatedAt DESC")
   fun getProjectsForUser(userId: String): Flow<List<ProjectEntity>>
 
@@ -86,6 +92,9 @@ interface InnovaraDao {
   suspend fun deleteProject(id: String)
 
   // Tasks
+  @Query("SELECT * FROM tasks")
+  fun getAllTasks(): Flow<List<TaskEntity>>
+
   @Query("SELECT * FROM tasks WHERE userId = :userId ORDER BY createdAt DESC")
   fun getTasksForUser(userId: String): Flow<List<TaskEntity>>
 
@@ -102,6 +111,9 @@ interface InnovaraDao {
   suspend fun deleteTask(id: String)
 
   // Developments
+  @Query("SELECT * FROM developments")
+  fun getAllDevelopments(): Flow<List<DevelopmentEntity>>
+
   @Query("SELECT * FROM developments WHERE userId = :userId ORDER BY createdAt DESC")
   fun getDevelopmentsForUser(userId: String): Flow<List<DevelopmentEntity>>
 

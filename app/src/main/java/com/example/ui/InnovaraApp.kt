@@ -82,6 +82,11 @@ fun InnovaraApp(
   val tasks by viewModel.viewingUserTasks.collectAsState()
   val developments by viewModel.viewingUserDevelopments.collectAsState()
 
+  val currentUserNotes by viewModel.currentUserNotes.collectAsState()
+  val currentUserProjects by viewModel.currentUserProjects.collectAsState()
+  val currentUserTasks by viewModel.currentUserTasks.collectAsState()
+  val currentUserDevelopments by viewModel.currentUserDevelopments.collectAsState()
+
   var showSwitchUserModal by remember { mutableStateOf(false) }
   var showGlobalAddDialog by remember { mutableStateOf(false) }
 
@@ -166,6 +171,7 @@ fun InnovaraApp(
       when (val screen = currentScreen) {
         is Screen.Landing -> {
           LandingScreen(
+            existingUsers = allUsers,
             onEnter = { name ->
               viewModel.enterAsUser(name)
             }
@@ -178,11 +184,11 @@ fun InnovaraApp(
               currentUser = currentUser!!,
               allUsers = allUsers,
               recentActivities = activities,
-              ideasCount = 12,
-              projectsCount = 4,
-              thoughtsCount = 27,
-              tasksCount = 18,
-              developmentsCount = 31,
+              ideasCount = currentUserNotes.count { it.type == "IDEA" },
+              projectsCount = currentUserProjects.size,
+              thoughtsCount = currentUserNotes.count { it.type == "THOUGHT" },
+              tasksCount = currentUserTasks.size,
+              developmentsCount = currentUserDevelopments.size,
               onOpenMyShelf = { viewModel.openStudentShelf(currentUser!!) },
               onOpenUserShelf = { user -> viewModel.openStudentShelf(user) },
               onOpenBookshelf = { viewModel.navigateTo(Screen.Bookshelf) },
@@ -287,6 +293,10 @@ fun InnovaraApp(
             viewModel.switchActiveUser(selected)
             showSwitchUserModal = false
           },
+          onLogout = {
+            viewModel.logout()
+            showSwitchUserModal = false
+          },
           onDismiss = { showSwitchUserModal = false }
         )
       }
@@ -299,6 +309,7 @@ private fun SwitchUserDialog(
   currentUser: UserEntity?,
   allUsers: List<UserEntity>,
   onSelect: (UserEntity) -> Unit,
+  onLogout: () -> Unit,
   onDismiss: () -> Unit
 ) {
   Dialog(onDismissRequest = onDismiss) {
@@ -367,6 +378,14 @@ private fun SwitchUserDialog(
               )
             }
           }
+        }
+
+        Spacer(modifier = Modifier.height(10.dp))
+        androidx.compose.material3.TextButton(
+          onClick = onLogout,
+          modifier = Modifier.fillMaxWidth()
+        ) {
+          Text("Sign out / Enter different student name", color = GoldPrimary, fontSize = 12.sp)
         }
       }
     }

@@ -16,6 +16,10 @@ class InnovaraRepository(private val dao: InnovaraDao) {
 
   val allUsers: Flow<List<UserEntity>> = dao.getAllUsers()
   val allActivities: Flow<List<ActivityEntity>> = dao.getAllActivities()
+  val allNotes: Flow<List<NoteEntity>> = dao.getAllNotes()
+  val allProjects: Flow<List<ProjectEntity>> = dao.getAllProjects()
+  val allTasks: Flow<List<TaskEntity>> = dao.getAllTasks()
+  val allDevelopments: Flow<List<DevelopmentEntity>> = dao.getAllDevelopments()
 
   suspend fun ensureSeeded() {
     // Live data mode: no hardcoded seed data
